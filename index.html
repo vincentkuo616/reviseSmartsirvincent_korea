@@ -29,28 +29,49 @@
     };
     
     // --- 核心邏輯：計算失分率與排名 ---
+    // --- 核心邏輯：修正勝負關係與排名 ---
     function getStandings(mexScore, itaScore) {
-      // 美國已賽完：對墨失3分(9局)，對義失8分(9局)
-      const usaData = { id: "USA", ra: 3 + 8, inn: 18 };
+      // 基礎數據 (三隊對戰失分與局數)
+      const usaData = { id: "USA", ra: 11, inn: 18, win: 3 };
+      const mexData = { id: "MEX", ra: 5 + itaScore, inn: 18, win: mexScore > itaScore ? 3 : 2 };
+      const itaData = { id: "ITA", ra: 6 + mexScore, inn: 18, win: itaScore > mexScore ? 3 : 3 }; // 義大利贏墨西哥就是3勝, 輸也是3勝(因目前3-0)
       
-      // 墨西哥：對美失5分(9局)，對義失 itaScore(假設打滿9局)
-      const mexData = { id: "MEX", ra: 5 + itaScore, inn: 18 };
-      
-      // 義大利：對美失6分(9局)，對墨失 mexScore(假設打滿9局)
-      const itaData = { id: "ITA", ra: 6 + mexScore, inn: 18 };
-    
-      // 計算失分率並排序 (低者優先)
-      const sorted = [usaData, mexData, itaData].map(t => ({
-        ...t,
-        rate: t.ra / t.inn
-      })).sort((a, b) => a.rate - b.rate);
-    
-      return {
-        top1: sorted[0].id,
-        top2: sorted[1].id,
-        eliminated: sorted[2].id,
-        all: sorted
-      };
+      // 注意：根據你的描述，義大利目前 3-0，墨西哥 2-1，美國 3-1
+      // 如果義大利贏：義(4-0), 美(3-1), 墨(2-2) -> 義美晉級
+      // 如果墨西哥贏：義(3-1), 美(3-1), 墨(3-1) -> 三隊比失分率
+  
+      if (itaScore > mexScore) {
+        // 義大利獲勝的情況：直接按戰績排名
+        return {
+          top1: "ITA",
+          top2: "USA",
+          eliminated: "MEX",
+          isTieBreak: false,
+          all: [
+            { id: "ITA", rate: 0, note: "勝場領先" },
+            { id: "USA", rate: 0, note: "勝場領先" },
+            { id: "MEX", rate: 0, note: "戰績落後" }
+          ]
+        };
+      } else if (mexScore > itaScore) {
+        // 墨西哥獲勝的情況：戰績相同，進入 TQB 失分率比較
+        const teams = [
+          { id: "USA", ra: 11, inn: 18 },
+          { id: "MEX", ra: 5 + itaScore, inn: 18 },
+          { id: "ITA", ra: 6 + mexScore, inn: 18 }
+        ].map(t => ({ ...t, rate: t.ra / t.inn }))
+         .sort((a, b) => a.rate - b.rate);
+  
+        return {
+          top1: teams[0].id,
+          top2: teams[1].id,
+          eliminated: teams[2].id,
+          isTieBreak: true,
+          all: teams
+        };
+      } else {
+        return { top1: "ITA", top2: "USA", eliminated: "TIE", isTieBreak: false, all: [] };
+      }
     }
     
     function WBCCalculator() {
