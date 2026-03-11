@@ -19,21 +19,41 @@
     const { useState, useMemo } = React;
 
     // 重新定義的晉級邏輯
-    function getAdvancer(mex, ita) {
-      if (mex === ita) return "TIE";
-      if (ita > mex) return "ITA"; // 義大利贏就晉級
-      if (mex <= 6) return "ITA";  // 墨西哥贏太少
-      if (mex >= 10 && ita >= 6) return "USA"; // 墨西哥贏但噴太多分，美國晉級
-      if (mex === 9 && ita >= 5) return "USA"; // 臨界點
-      return "MEX";
+    // 修正後的晉級邏輯
+    function getAdvancer(mexScore, itaScore) {
+      // 1. 基礎數據定義 (僅計算這三隊之間的對戰)
+      // 美國數據 (已完成所有對戰)
+      const usaDefInnings = 9 + 9; // 對墨9局 + 對義9局
+      const usaRunsAgainst = 3 + 8; // 被墨得3分 + 被義得8分 = 11
+    
+      // 墨西哥數據
+      const mexDefInnings = 9 + 9; // 對美9局 + 對義9局 (假設打滿)
+      const mexRunsAgainst = 5 + itaScore; // 被美得5分 + 被義得得分
+    
+      // 義大利數據
+      const itaDefInnings = 9 + 9; // 對美9局 + 對墨9局 (假設打滿)
+      const itaRunsAgainst = 6 + mexScore; // 被美得6分 + 被墨得得分
+    
+      // 2. 計算失分率 (Runs Allowed / Defensive Innings)
+      const raUSA = usaRunsAgainst / usaDefInnings;
+      const raMEX = mexRunsAgainst / mexDefInnings;
+      const raITA = itaRunsAgainst / itaDefInnings;
+    
+      // 3. 排序找出前兩名 (失分率越低越好)
+      const teams = [
+        { id: "USA", ra: raUSA },
+        { id: "MEX", ra: raMEX },
+        { id: "ITA", ra: raITA }
+      ].sort((a, b) => a.ra - b.ra);
+    
+      // 4. 回傳晉級狀況 (此處為了符合你的 UI，我們找出誰是「分組第一」或「特定晉級者」)
+      // 實際上這三隊會取前兩名，這裡我們回傳一個陣列或物件
+      return {
+        top1: teams[0].id,
+        top2: teams[1].id,
+        all: teams
+      };
     }
-
-    const FLAG = { MEX: "🇲🇽", ITA: "🇮🇹", USA: "🇺🇸" };
-    const TEAM_NAME = { MEX: "墨西哥", ITA: "義大利", USA: "美國" };
-    const TEAM_COLOR = {
-      MEX: { bg: "#006341" }, ITA: { bg: "#008C45" }, USA: { bg: "#002868" },
-      TIE: { bg: "#6B7280" }
-    };
 
     function WBCCalculator() {
       const [mexScore, setMexScore] = useState(0);
