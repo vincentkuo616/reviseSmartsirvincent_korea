@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>⚾ 2026 WBC 晉級計算器 — 美國・墨西哥・義大利</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    // 重新定義的晉級邏輯
+    function getAdvancer(mex, ita) {
+      if (mex === ita) return "TIE";
+      if (ita > mex) return "ITA"; // 義大利贏就晉級
+      if (mex <= 6) return "ITA";  // 墨西哥贏太少
+      if (mex >= 10 && ita >= 6) return "USA"; // 墨西哥贏但噴太多分，美國晉級
+      if (mex === 9 && ita >= 5) return "USA"; // 臨界點
+      return "MEX";
+    }
+
+    const FLAG = { MEX: "🇲🇽", ITA: "🇮🇹", USA: "🇺🇸" };
+    const TEAM_NAME = { MEX: "墨西哥", ITA: "義大利", USA: "美國" };
+    const TEAM_COLOR = {
+      MEX: { bg: "#006341" }, ITA: { bg: "#008C45" }, USA: { bg: "#002868" },
+      TIE: { bg: "#6B7280" }
+    };
+
+    function WBCCalculator() {
+      const [mexScore, setMexScore] = useState(0);
+      const [itaScore, setItaScore] = useState(0);
+
+      const result = useMemo(() => getAdvancer(mexScore, itaScore), [mexScore, itaScore]);
+
+      const analysis = useMemo(() => {
+        const usa = [], mex = [], ita = [];
+
+        // 美國視角
+        if (result === "USA") {
+          usa.push("🎉 奇蹟發生！墨西哥跟義大利互爆，美國晉級！");
+          usa.push("感謝墨西哥猛攻，也感謝義大利有得分。");
+        } else {
+          usa.push("😰 目前美國處於淘汰區間");
+          if (mexScore > itaScore) {
+            usa.push(`需要義大利再追 ${Math.max(0, 6 - itaScore)} 分，且墨西哥維持高分`);
+          } else {
+            usa.push("義大利領先對美國是大威脅，希望墨西哥逆轉但要掉分");
+          }
+        }
+
+        // 墨西哥視角
+        if (result === "MEX") {
+          mex.push("🎉 晉級情勢看好！只要維持低失分並贏球。");
+        } else if (itaScore > mexScore) {
+          mex.push("💀 輸球就打包，這是目前的狀況。");
+        } else {
+          mex.push("⚠️ 贏球但噴分噴太多了，小心送美國進八強。");
+        }
+
+        // 義大利視角
+        if (result === "ITA") {
+          ita.push("🎉 義大利晉級！目前的 TQB 優勢非常巨大。");
+        } else {
+          ita.push("⚠️ 墨西哥分差拉開了，義大利需要追分。");
+        }
+
+        return { usa, mex, ita };
+      }, [mexScore, itaScore, result]);
+
+      return (
+        <div style={{ minHeight: "100vh", padding: 16, maxWidth: 480, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 900 }}>⚾ WBC 晉級計算器</h1>
+            <p style={{ fontSize: 13, color: "#64748b" }}>美國(失11) • 墨西哥(失5+?) • 義大利(失1+?)</p>
+          </div>
+
+          <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
+            {/* 墨西哥 */}
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontSize: 32, marginRight: 12 }}>{FLAG.MEX}</span>
+              <div style={{ flex: 1 }}><b style={{ fontSize: 18 }}>{TEAM_NAME.MEX}</b></div>
+              <button onClick={() => setMexScore(s => Math.max(0, s-1))} style={{ padding: "8px 12px" }}>-</button>
+              <span style={{ fontSize: 28, width: 40, textAlign: "center", fontWeight: 700 }}>{mexScore}</span>
+              <button onClick={() => setMexScore(s => s+1)} style={{ padding: "8px 12px" }}>+</button>
+            </div>
+
+            {/* 義大利 */}
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontSize: 32, marginRight: 12 }}>{FLAG.ITA}</span>
+              <div style={{ flex: 1 }}><b style={{ fontSize: 18 }}>{TEAM_NAME.ITA}</b></div>
+              <button onClick={() => setItaScore(s => Math.max(0, s-1))} style={{ padding: "8px 12px" }}>-</button>
+              <span style={{ fontSize: 28, width: 40, textAlign: "center", fontWeight: 700 }}>{itaScore}</span>
+              <button onClick={() => setItaScore(s => s+1)} style={{ padding: "8px 12px" }}>+</button>
+            </div>
+
+            <div style={{ padding: 16, background: "#f8fafc", borderRadius: 8, textAlign: "center", border: "2px solid" + (TEAM_COLOR[result]?.bg || "#e2e8f0") }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: TEAM_COLOR[result]?.bg }}>
+                {result === "TIE" ? "⚔️ 平手" : `${FLAG[result]} ${TEAM_NAME[result]} 晉級八強`}
+              </span>
+            </div>
+          </div>
+
+          {/* 分析區 */}
+          <div style={{ marginTop: 20 }}>
+            {[
+              { id: 'usa', name: '美國', color: TEAM_COLOR.USA.bg, lines: analysis.usa, f: FLAG.USA },
+              { id: 'mex', name: '墨西哥', color: TEAM_COLOR.MEX.bg, lines: analysis.mex, f: FLAG.MEX },
+              { id: 'ita', name: '義大利', color: TEAM_COLOR.ITA.bg, lines: analysis.ita, f: FLAG.ITA }
+            ].map(t => (
+              <div key={t.id} style={{ background: "#fff", padding: 12, borderRadius: 8, marginBottom: 8, borderLeft: `5px solid ${t.color}` }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{t.f} {t.name}視角</div>
+                {t.lines.map((l, i) => <div key={i} style={{ fontSize: 13, color: "#475569" }}>• {l}</div>)}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<WBCCalculator />);
+  </script>
+</body>
+</html>
